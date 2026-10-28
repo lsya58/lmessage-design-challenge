@@ -3,7 +3,7 @@
 ミショナ様 UI/UXデザイナー職 選考課題
 
 ## 成果物URL
-- **プロトタイプURL**: `https://(Vercel等で発行されたURLをここに記載)`
+- **プロトタイプURL**: https://lmessage-design-challenge-82qi.vercel.app
 - **Figma URL**: 今回はReact(Vite + Tailwind CSS)で動くプロトタイプを作成したため、上記URLをご参照ください。
 
 ---
