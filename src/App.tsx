@@ -9,7 +9,8 @@ import {
   RotateCcw,
   Eye,
   EyeOff,
-  Image as ImageIcon // テンプレートアイコン用に追加
+  Image as ImageIcon,
+  Edit2
 } from 'lucide-react';
 
 interface MenuArea {
@@ -21,7 +22,6 @@ interface MenuArea {
   replyMessage: string;
 }
 
-// チャットログにメッセージの型を追加
 interface ChatLog {
   sender: 'user' | 'bot';
   text: string;
@@ -32,8 +32,6 @@ export default function App() {
   const [currentView, setCurrentView] = useState<'empty' | 'editor'>('empty');
   const [selectedAreaId, setSelectedAreaId] = useState<number>(1);
   const [showDiagnosticModal, setShowDiagnosticModal] = useState<boolean>(false);
-  
-  // ★追加機能：背景画像の状態管理
   const [bgImage, setBgImage] = useState<string | null>(null);
 
   const [areas, setAreas] = useState<MenuArea[]>([
@@ -55,14 +53,11 @@ export default function App() {
     setAreas(prev => prev.map(area => area.id === selectedAreaId ? { ...area, ...fields } : area));
   };
 
-  // ★追加機能：画像のアップロード処理
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = (event) => {
-        setBgImage(event.target?.result as string);
-      };
+      reader.onload = (event) => setBgImage(event.target?.result as string);
       reader.readAsDataURL(file);
     }
   };
@@ -78,7 +73,6 @@ export default function App() {
       newLogs.push({ sender: 'bot', text: `🔗 リンクを開きます: ${area.payload}`, type: 'url' });
     } else if (area.replyMessage) {
       newLogs.push({ sender: 'bot', text: area.replyMessage, type: 'text' });
-      // ★修正：テンプレートの場合は type: 'template' としてログに追加
       if (area.payload) {
         newLogs.push({ sender: 'bot', text: area.payload, type: area.actionType });
       }
@@ -90,6 +84,8 @@ export default function App() {
       setChatLogs(prev => [...prev, ...newLogs]);
     }
   };
+
+  const actionLabels = { text: 'テキスト', template: 'テンプレート', url: 'URL遷移' };
 
   return (
     <div className="min-h-screen bg-[#f8f8f8] text-[#222222] flex flex-col font-sans">
@@ -142,8 +138,6 @@ export default function App() {
           <div className="grid grid-cols-12 gap-6">
             <div className="col-span-7 space-y-6">
               <div className="bg-white rounded-xl border border-[#e0e0e0] p-5 shadow-sm">
-                
-                {/* ★追加機能：画像アップロードUI */}
                 <div className="flex justify-between items-center mb-4">
                   <div>
                     <h2 className="text-[16px] font-medium leading-[24px]">メニュー領域の分割・画像設定</h2>
@@ -154,29 +148,18 @@ export default function App() {
                       <Upload size={14} /> 画像をアップロード
                       <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
                     </label>
-                    <span className="text-[12px] bg-[#f8f8f8] text-[#888888] px-2.5 py-1.5 rounded border border-[#e0e0e0]">
-                      6分割
-                    </span>
+                    <span className="text-[12px] bg-[#f8f8f8] text-[#888888] px-2.5 py-1.5 rounded border border-[#e0e0e0]">6分割</span>
                   </div>
                 </div>
 
-                {/* ★追加機能：背景画像が反映されるグリッドエリア */}
                 <div 
                   className="grid grid-cols-3 bg-[#f0f0f0] rounded-xl border border-[#e0e0e0] aspect-[12/8] overflow-hidden relative"
-                  style={{ 
-                    backgroundImage: bgImage ? `url(${bgImage})` : 'none', 
-                    backgroundSize: 'cover', 
-                    backgroundPosition: 'center' 
-                  }}
+                  style={{ backgroundImage: bgImage ? `url(${bgImage})` : 'none', backgroundSize: 'cover', backgroundPosition: 'center' }}
                 >
                   {areas.map((area) => {
                     const isSelected = area.id === selectedAreaId;
                     const isError = area.payload === '';
-                    
-                    // 背景画像がある場合はエリアを半透明にして下の画像が見えるようにする
-                    const bgStyle = bgImage 
-                      ? (isSelected ? 'bg-white/60 border-[#08bf5a]' : 'bg-white/10 hover:bg-white/30 border-white/30')
-                      : (isSelected ? 'bg-white border-[#08bf5a]' : 'bg-white/80 hover:bg-white border-transparent');
+                    const bgStyle = bgImage ? (isSelected ? 'bg-white/60 border-[#08bf5a]' : 'bg-white/10 hover:bg-white/30 border-white/30') : (isSelected ? 'bg-white border-[#08bf5a]' : 'bg-white/80 hover:bg-white border-transparent');
 
                     return (
                       <div
@@ -185,9 +168,7 @@ export default function App() {
                         className={`p-3 flex flex-col justify-between cursor-pointer transition-all border-2 backdrop-blur-[1px] m-0.5 rounded-lg ${bgStyle}`}
                       >
                         <div className="flex items-center justify-between">
-                          <span className={`text-[11px] font-bold px-2 py-0.5 rounded shadow-sm ${
-                            isSelected ? 'bg-[#08bf5a] text-white' : 'bg-[#222222] text-white'
-                          }`}>
+                          <span className={`text-[11px] font-bold px-2 py-0.5 rounded shadow-sm ${isSelected ? 'bg-[#08bf5a] text-white' : 'bg-[#222222] text-white'}`}>
                             エリア {area.id}
                           </span>
                           {isError && (
@@ -197,27 +178,36 @@ export default function App() {
                           )}
                         </div>
 
-                        {/* 背景画像がある時はテキストを少し見えにくくして画像を強調 */}
                         <div className={`text-center py-2 ${bgImage && !isSelected ? 'opacity-0 hover:opacity-100' : 'opacity-100'} transition-opacity`}>
                           <p className={`text-[13px] font-bold ${bgImage ? 'text-black drop-shadow-md bg-white/70 inline-block px-2 rounded' : 'text-[#222222]'}`}>
                             {area.label}
                           </p>
                         </div>
-                        <div />
+                        
+                        {/* ★追加機能：グリッド上のアクション種別の明示 */}
+                        <div className={`flex items-center justify-between text-[10px] font-medium mt-auto ${bgImage && !isSelected ? 'opacity-0 hover:opacity-100' : 'opacity-100'} transition-opacity`}>
+                          <span className="bg-white/90 text-[#555] px-1.5 py-0.5 rounded shadow-sm border border-[#e0e0e0]">
+                            {actionLabels[area.actionType]}
+                          </span>
+                          {area.showUserBubble ? (
+                            <span className="text-[#fea600] flex items-center gap-0.5 bg-white/90 px-1.5 py-0.5 rounded shadow-sm border border-[#e0e0e0]"><Eye size={10} />有</span>
+                          ) : (
+                            <span className="text-[#888888] flex items-center gap-0.5 bg-white/90 px-1.5 py-0.5 rounded shadow-sm border border-[#e0e0e0]"><EyeOff size={10} />無</span>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
                 </div>
               </div>
 
-              {/* エリア詳細設定フォーム */}
               <div className="bg-white rounded-xl border border-[#e0e0e0] p-6 shadow-sm">
                 <div className="flex items-center justify-between pb-4 border-b border-[#e0e0e0] mb-5">
                   <h3 className="text-[16px] font-medium text-[#222222] flex items-center gap-2">
                     <span className="w-6 h-6 rounded bg-[#08bf5a] text-white text-[12px] flex items-center justify-center font-bold">
                       {selectedArea.id}
                     </span>
-                    エリア {selectedArea.id}（{selectedArea.label}）の設定
+                    エリア {selectedArea.id} の設定
                   </h3>
                   <button onClick={() => handleSimulateClick(selectedArea)} className="text-[12px] text-[#5799DB] hover:underline flex items-center gap-1 font-medium">
                     このエリアの動作をテスト
@@ -225,6 +215,20 @@ export default function App() {
                 </div>
 
                 <div className="space-y-5">
+                  {/* ★追加機能：エリア名の自由編集UI */}
+                  <div>
+                    <label className="block text-[14px] font-medium text-[#222222] mb-2 flex items-center gap-1.5">
+                      <Edit2 size={14} className="text-[#888888]"/> エリア管理名（ユーザーには見えません）
+                    </label>
+                    <input
+                      type="text"
+                      value={selectedArea.label}
+                      onChange={(e) => updateSelectedArea({ label: e.target.value })}
+                      placeholder="例：WEB予約"
+                      className="w-full text-[14px] p-2.5 rounded-lg border border-[#e0e0e0] focus:border-[#08bf5a] focus:outline-none"
+                    />
+                  </div>
+
                   <div>
                     <label className="block text-[14px] font-medium text-[#222222] mb-2">アクション種別</label>
                     <div className="grid grid-cols-3 gap-3">
@@ -303,7 +307,6 @@ export default function App() {
                 </div>
 
                 <div className="w-[320px] mx-auto bg-[#849ebf] rounded-3xl overflow-hidden border-[6px] border-[#222222] shadow-xl flex flex-col h-[520px]">
-                  {/* ヘッダー色をミショナ社のメインカラーに統一 */}
                   <div className="bg-[#08bf5a] text-white px-4 py-2 text-[12px] flex justify-between items-center shadow-sm">
                     <span className="font-medium">ヘアサロン ALICE</span>
                     <span className="text-[10px] bg-white/20 px-1.5 rounded">テスト環境</span>
@@ -312,7 +315,6 @@ export default function App() {
                   <div className="flex-1 p-3 overflow-y-auto space-y-3">
                     {chatLogs.map((log, index) => (
                       <div key={index} className={`flex ${log.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                        {/* ★追加機能：テンプレート型のメッセージをリッチに描画 */}
                         {log.type === 'template' ? (
                           <div className="bg-white rounded-xl overflow-hidden shadow-sm max-w-[85%] border border-[#e0e0e0]">
                             <div className="h-24 bg-[#f4fbf2] flex items-center justify-center border-b border-[#e0e0e0]">
@@ -338,24 +340,16 @@ export default function App() {
                     ))}
                   </div>
 
-                  {/* ★追加機能：シミュレーターのリッチメニューも画像が反映されるように */}
                   <div className="bg-white border-t border-[#e0e0e0]">
                     <div 
                       className="grid grid-cols-3 relative"
-                      style={{ 
-                        backgroundImage: bgImage ? `url(${bgImage})` : 'none', 
-                        backgroundSize: 'cover', 
-                        backgroundPosition: 'center',
-                        height: '140px' 
-                      }}
+                      style={{ backgroundImage: bgImage ? `url(${bgImage})` : 'none', backgroundSize: 'cover', backgroundPosition: 'center', height: '140px' }}
                     >
                       {areas.map(area => (
                         <button
                           key={area.id}
                           onClick={() => handleSimulateClick(area)}
-                          className={`w-full h-full border border-black/5 transition-colors ${
-                            bgImage ? 'hover:bg-black/10' : 'bg-white hover:bg-[#f4fbf2]'
-                          }`}
+                          className={`w-full h-full border border-black/5 transition-colors ${bgImage ? 'hover:bg-black/10' : 'bg-white hover:bg-[#f4fbf2]'}`}
                         >
                           {!bgImage && (
                             <p className="text-[11px] font-medium text-[#222222] truncate px-1">
@@ -378,7 +372,6 @@ export default function App() {
 
         {showDiagnosticModal && (
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-            {/* モーダルの中身（変更なしのため省略せずに維持） */}
             <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-[#e0e0e0] animate-in fade-in duration-200">
               <div className="flex items-center justify-between pb-4 border-b border-[#e0e0e0]">
                 <div className="flex items-center gap-2 text-[#f44336]">
